@@ -1,18 +1,18 @@
 """
 CSV Handler Module
-Handles reading and searching student data from workshop attendance CSV file
+Handles reading and searching student data from a CSV export
 """
 
 import csv
 import os
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Iterable
 
 
 class CSVHandler:
     """Handle CSV operations for student data"""
     
-    def __init__(self, csv_path: str = "data/Workshop-I Attendance Form (Responses).csv"):
+    def __init__(self, csv_path: str = "data/students.csv"):
         """
         Initialize CSV handler
         
@@ -25,6 +25,29 @@ class CSVHandler:
             candidate = project_root / candidate
 
         self.csv_path = str(candidate)
+
+    @staticmethod
+    def _normalize_key(key: str) -> str:
+        return "".join(ch for ch in (key or "").strip().lower() if ch.isalnum() or ch == "_")
+
+    @classmethod
+    def _get_first(cls, row: Dict[str, str], keys: Iterable[str]) -> str:
+        normalized_row = {cls._normalize_key(k): v for k, v in row.items()}
+        for key in keys:
+            value = normalized_row.get(cls._normalize_key(key))
+            if value is not None:
+                return str(value)
+        return ""
+
+    def normalize_student(self, row: Dict[str, str]) -> Dict[str, str]:
+        """Return a canonical student dict regardless of CSV header variations."""
+        return {
+            "Name": self._get_first(row, ["Name", "Full Name", "Student Name"]),
+            "Student_Id": self._get_first(row, ["Student_Id", "Student ID", "StudentId", "Student_Id "]),
+            "Email_id": self._get_first(row, ["Email_id", "Email", "Email ID", "Email Address"]),
+            "Course": self._get_first(row, ["Course", "Program", "Branch"]),
+            "Code": self._get_first(row, ["Code", "Workshop", "Event", "Batch"]),
+        }
         
     def get_all_students(self) -> List[Dict[str, str]]:
         """
@@ -39,11 +62,11 @@ class CSVHandler:
         if not os.path.exists(self.csv_path):
             raise FileNotFoundError(f"CSV file not found: {self.csv_path}")
         
-        students = []
-        with open(self.csv_path, 'r', encoding='utf-8') as file:
+        students: List[Dict[str, str]] = []
+        with open(self.csv_path, 'r', encoding='utf-8', newline='') as file:
             reader = csv.DictReader(file)
             for row in reader:
-                students.append(row)
+                students.append(self.normalize_student(row))
         
         return students
     
@@ -84,7 +107,8 @@ class CSVHandler:
         Returns:
             Certificate ID in format CERT-WORKSHOP1-{student_id}
         """
-        return f"CERT-WORKSHOP1-{student_id}"
+        prefix = os.getenv("CERTIFICATE_ID_PREFIX", "CERT")
+        return f"{prefix}-{student_id}"
     
     def validate_csv_structure(self) -> bool:
         """
@@ -93,14 +117,13 @@ class CSVHandler:
         Returns:
             True if CSV structure is valid, False otherwise
         """
-        required_columns = {'Name', 'Email_id', 'Student_Id', 'Course', 'Code'}
+        required_columns = {'Name', 'Student_Id'}
         
         try:
             students = self.get_all_students()
             if not students:
                 return False
             
-            # Check if all required columns exist
             first_row_keys = set(students[0].keys())
             return required_columns.issubset(first_row_keys)
             

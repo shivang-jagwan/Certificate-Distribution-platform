@@ -1,13 +1,15 @@
 """
 Certificate Generator Module
-Handles dynamic certificate generation using Pillow
+Handles dynamic certificate generation using ReportLab (production-friendly)
 """
 
 import os
-from PIL import Image, ImageDraw, ImageFont
-from typing import Tuple, Optional
-from io import BytesIO
 from pathlib import Path
+from typing import Optional
+
+from reportlab.lib.pagesizes import landscape, A4
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfgen import canvas
 
 
 class CertificateGenerator:
@@ -36,64 +38,8 @@ class CertificateGenerator:
             if not output_candidate.is_absolute():
                 output_candidate = project_root / output_candidate
             self.output_dir = str(output_candidate)
-
-            # Create output directory if it doesn't exist
             os.makedirs(self.output_dir, exist_ok=True)
         
-    def _get_font(self, size: int) -> ImageFont.FreeTypeFont:
-        """
-        Load font with fallback to default
-        
-        Args:
-            size: Font size
-            
-        Returns:
-            Font object
-        """
-        try:
-            # Try to load a nice font (works on most systems)
-            return ImageFont.truetype("arial.ttf", size)
-        except:
-            try:
-                # Fallback for Linux systems
-                return ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", size)
-            except:
-                # Ultimate fallback to default font
-                return ImageFont.load_default()
-    
-    def _get_text_bbox(self, draw: ImageDraw.ImageDraw, text: str, 
-                       font: ImageFont.FreeTypeFont) -> Tuple[int, int, int, int]:
-        """
-        Get bounding box for text
-        
-        Args:
-            draw: ImageDraw object
-            text: Text to measure
-            font: Font to use
-            
-        Returns:
-            Tuple of (left, top, right, bottom)
-        """
-        return draw.textbbox((0, 0), text, font=font)
-    
-    def _center_text(self, image_width: int, text: str, 
-                     font: ImageFont.FreeTypeFont, draw: ImageDraw.ImageDraw) -> int:
-        """
-        Calculate x position to center text
-        
-        Args:
-            image_width: Width of the image
-            text: Text to center
-            font: Font being used
-            draw: ImageDraw object
-            
-        Returns:
-            X position for centered text
-        """
-        bbox = self._get_text_bbox(draw, text, font)
-        text_width = bbox[2] - bbox[0]
-        return (image_width - text_width) // 2
-    
     def generate_certificate(self, student_name: str, certificate_id: str) -> str:
         """
         Generate a certificate for a student
@@ -108,68 +54,42 @@ class CertificateGenerator:
         Raises:
             FileNotFoundError: If template image doesn't exist
         """
-        if not os.path.exists(self.template_path):
-            raise FileNotFoundError(f"Template not found: {self.template_path}")
-        
-        # Load template
-        template = Image.open(self.template_path)
-        draw = ImageDraw.Draw(template)
-        
-        # Get image dimensions
-        img_width, img_height = template.size
-        
-        # Define font - larger size for name
-        name_font = self._get_font(120)  # Increased from 80 to 120
-        
-        # Calculate position for centered name
-        name_x = self._center_text(img_width, student_name, name_font, draw)
-        name_y = img_height // 2 - 20  # Centered vertically
-        
-        # Draw only the student name on certificate (no certificate ID)
-        draw.text((name_x, name_y), student_name, fill='#1a1a1a', font=name_font)
-        
         if not self.output_dir:
             raise RuntimeError("Output directory is not configured")
 
-        # Save as PDF
         output_filename = f"{certificate_id}.pdf"
         output_path = os.path.join(self.output_dir, output_filename)
-        
-        # Convert RGB if necessary (PDF requires RGB)
-        if template.mode != 'RGB':
-            template = template.convert('RGB')
-        
-        # Save directly as PDF using Pillow
-        template.save(output_path, "PDF", resolution=100.0)
+
+        page_width, page_height = landscape(A4)
+        c = canvas.Canvas(output_path, pagesize=(page_width, page_height))
+
+        # Optional template background (if the image exists)
+        if os.path.exists(self.template_path):
+            try:
+                img = ImageReader(self.template_path)
+                c.drawImage(img, 0, 0, width=page_width, height=page_height, preserveAspectRatio=True, mask='auto')
+            except Exception:
+                # If template fails to load, still generate a valid PDF.
+                pass
+        else:
+            # Simple background when no image is present
+            c.setFillColorRGB(0.04, 0.06, 0.15)
+            c.rect(0, 0, page_width, page_height, fill=1, stroke=0)
+
+        # Student name
+        c.setFillColorRGB(1, 1, 1)
+        c.setFont("Helvetica-Bold", 36)
+        c.drawCentredString(page_width / 2, page_height / 2, student_name)
+
+        # Certificate ID (small)
+        c.setFont("Helvetica", 10)
+        c.setFillColorRGB(1, 1, 1)
+        c.drawRightString(page_width - 24, 18, certificate_id)
+
+        c.showPage()
+        c.save()
         
         return output_path
-
-    def generate_certificate_bytes(self, student_name: str) -> bytes:
-        """Generate a certificate PDF as bytes (no filesystem writes).
-
-        This is useful for serverless deployments (e.g. Vercel) where local
-        disk is ephemeral and should not be used as a cache.
-        """
-        if not os.path.exists(self.template_path):
-            raise FileNotFoundError(f"Template not found: {self.template_path}")
-
-        template = Image.open(self.template_path)
-        draw = ImageDraw.Draw(template)
-
-        img_width, img_height = template.size
-        name_font = self._get_font(120)
-
-        name_x = self._center_text(img_width, student_name, name_font, draw)
-        name_y = img_height // 2 - 20
-
-        draw.text((name_x, name_y), student_name, fill='#1a1a1a', font=name_font)
-
-        if template.mode != 'RGB':
-            template = template.convert('RGB')
-
-        buf = BytesIO()
-        template.save(buf, "PDF", resolution=100.0)
-        return buf.getvalue()
     
     def certificate_exists(self, certificate_id: str) -> bool:
         """

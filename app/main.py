@@ -3,13 +3,14 @@ FastAPI Certificate Distribution System
 Main application with all API endpoints
 """
 
-from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import FileResponse, HTMLResponse, Response
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
 import os
-from typing import Dict, Any
 from pathlib import Path
+from typing import Dict, Any, List
+
+from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.csv_handler import CSVHandler
 from app.certificate_generator import CertificateGenerator
@@ -22,45 +23,47 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Add CORS middleware
+# ---- Environment / Paths (Render-friendly) ----
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+TEMPLATES_DIR = PROJECT_ROOT / "templates"
+
+CSV_PATH = os.getenv("CSV_PATH", "data/students.csv")
+CERTIFICATES_DIR = os.getenv("CERTIFICATES_DIR", "certificates")
+TEMPLATE_IMAGE = os.getenv("CERTIFICATE_TEMPLATE_IMAGE", "templates/certificate_template.jpg")
+
+# Admin key for protected endpoints (optional)
+ADMIN_KEY = os.getenv("ADMIN_KEY", "")
+
+
+def _as_abs(path_str: str) -> str:
+    p = Path(path_str)
+    if not p.is_absolute():
+        p = PROJECT_ROOT / p
+    return str(p)
+
+
+# Add CORS middleware (configure allowed origins via env var)
+origins_raw = os.getenv("CORS_ALLOW_ORIGINS", "*")
+allow_origins: List[str] = [o.strip() for o in origins_raw.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins if allow_origins else ["*"],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["*"] ,
     allow_headers=["*"],
 )
 
-# Vercel serverless deployments have an ephemeral filesystem.
-IS_VERCEL = os.getenv("VERCEL") == "1"
-
-# Admin key for protected endpoints (in production, use environment variables)
-ADMIN_KEY = "ADMIN123"
-
-
-# Project root (used to build stable absolute paths)
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-
 
 # Initialize handlers
-csv_handler = CSVHandler(str(PROJECT_ROOT / "data" / "Workshop-I Attendance Form (Responses).csv"))
+csv_handler = CSVHandler(_as_abs(CSV_PATH))
 cert_generator = CertificateGenerator(
-    template_path=str(PROJECT_ROOT / "templates" / "certificate_template.jpg"),
-    # Avoid read-only filesystem issues on Vercel.
-    output_dir=str(Path("/tmp") / "certificates") if IS_VERCEL else str(PROJECT_ROOT / "certificates"),
+    template_path=_as_abs(TEMPLATE_IMAGE),
+    output_dir=_as_abs(CERTIFICATES_DIR),
 )
 
 
-# Frontend (React) build support
-FRONTEND_DIST_DIR = PROJECT_ROOT / "frontend" / "dist"
-FRONTEND_INDEX_HTML = FRONTEND_DIST_DIR / "index.html"
-FRONTEND_ASSETS_DIR = FRONTEND_DIST_DIR / "assets"
-
-TEMPLATES_DIR = PROJECT_ROOT / "templates"
-
-if FRONTEND_ASSETS_DIR.exists():
-    app.mount("/assets", StaticFiles(directory=str(FRONTEND_ASSETS_DIR)), name="frontend-assets")
-
+# Serve templates directory as static (optional assets)
 if TEMPLATES_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(TEMPLATES_DIR)), name="static")
 
@@ -73,11 +76,6 @@ async def home():
     Returns:
         HTML page with certificate search form
     """
-    # Prefer the built React SPA if present
-    if FRONTEND_INDEX_HTML.exists():
-        return FileResponse(str(FRONTEND_INDEX_HTML), media_type="text/html")
-
-    # Fallback to legacy static HTML template
     html_path = TEMPLATES_DIR / "index.html"
 
     if not html_path.exists():
@@ -163,20 +161,7 @@ async def get_certificate(name: str, student_id: str):
     # Generate certificate ID
     certificate_id = csv_handler.generate_certificate_id(student.get("Student_Id"))
     
-    # Serverless (Vercel): generate in-memory PDF (no disk caching)
-    if IS_VERCEL:
-        try:
-            pdf_bytes = cert_generator.generate_certificate_bytes(student_name=student.get("Name"))
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Error generating certificate: {str(e)}")
-
-        return Response(
-            content=pdf_bytes,
-            media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename=\"{certificate_id}.pdf\""},
-        )
-
-    # Local/dev: cache PDFs on disk
+    # Render/WebService: cache PDFs on disk
     if not cert_generator.certificate_exists(certificate_id):
         try:
             cert_generator.generate_certificate(
@@ -205,17 +190,11 @@ async def generate_all_certificates(admin_key: str = Query(..., description="Adm
     Raises:
         HTTPException: If admin key is invalid or generation fails
     """
-    # Verify admin key
-    if admin_key != ADMIN_KEY:
+    # Verify admin key (only enforced if ADMIN_KEY is set)
+    if ADMIN_KEY and admin_key != ADMIN_KEY:
         raise HTTPException(
             status_code=403,
             detail="Invalid admin key"
-        )
-
-    if IS_VERCEL:
-        raise HTTPException(
-            status_code=501,
-            detail="Bulk generation is disabled on serverless deployments. Generate on-demand via /certificate instead.",
         )
     
     try:
