@@ -88,14 +88,28 @@ async def home():
 
 
 @app.get("/health")
-async def health_check() -> Dict[str, str]:
+async def health_check() -> Dict[str, Any]:
     """
     Health check endpoint for monitoring
     
     Returns:
         Status message
     """
-    return {"status": "running"}
+    csv_abs = _as_abs(CSV_PATH)
+    template_abs = _as_abs(TEMPLATE_IMAGE)
+    certificates_abs = _as_abs(CERTIFICATES_DIR)
+
+    return {
+        "status": "running",
+        "paths": {
+            "csv": csv_abs,
+            "csv_exists": Path(csv_abs).exists(),
+            "template_image": template_abs,
+            "template_exists": Path(template_abs).exists(),
+            "certificates_dir": certificates_abs,
+            "certificates_dir_exists": Path(certificates_abs).exists(),
+        },
+    }
 
 
 @app.get("/verify")
@@ -113,7 +127,18 @@ async def verify_certificate(name: str, student_id: str) -> Dict[str, Any]:
     Raises:
         HTTPException: If student not found
     """
-    student = csv_handler.find_student_by_name_and_id(name, student_id)
+    try:
+        student = csv_handler.find_student_by_name_and_id(name, student_id)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Student database CSV not available: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error while verifying student: {str(e)}",
+        )
     
     if not student:
         raise HTTPException(
@@ -150,7 +175,18 @@ async def get_certificate(name: str, student_id: str):
         HTTPException: If student not found in database
     """
     # Verify student exists
-    student = csv_handler.find_student_by_name_and_id(name, student_id)
+    try:
+        student = csv_handler.find_student_by_name_and_id(name, student_id)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Student database CSV not available: {str(e)}",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unexpected error while looking up student: {str(e)}",
+        )
     
     if not student:
         raise HTTPException(
@@ -235,20 +271,6 @@ async def generate_all_certificates(admin_key: str = Query(..., description="Adm
             status_code=500,
             detail=f"Error generating certificates: {str(e)}"
         )
-
-
-@app.get("/{full_path:path}", include_in_schema=False)
-async def spa_fallback(full_path: str):
-    """Serve the React SPA for client-side routes when a frontend build is present."""
-    if not FRONTEND_INDEX_HTML.exists():
-        raise HTTPException(status_code=404)
-
-    # Serve any real file from dist (e.g., favicon) if it exists.
-    candidate = FRONTEND_DIST_DIR / full_path
-    if candidate.exists() and candidate.is_file():
-        return FileResponse(str(candidate))
-
-    return FileResponse(str(FRONTEND_INDEX_HTML), media_type="text/html")
 
 
 # Run with: uvicorn app.main:app --reload

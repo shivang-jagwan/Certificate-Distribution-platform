@@ -39,6 +39,16 @@ class CSVHandler:
                 return str(value)
         return ""
 
+    @staticmethod
+    def _normalize_name(value: str) -> str:
+        # Collapse internal whitespace and normalize case.
+        return " ".join((value or "").strip().lower().split())
+
+    @staticmethod
+    def _normalize_student_id(value: str) -> str:
+        # Keep IDs as strings; remove leading/trailing whitespace.
+        return (value or "").strip()
+
     def normalize_student(self, row: Dict[str, str]) -> Dict[str, str]:
         """Return a canonical student dict regardless of CSV header variations."""
         return {
@@ -63,7 +73,8 @@ class CSVHandler:
             raise FileNotFoundError(f"CSV file not found: {self.csv_path}")
         
         students: List[Dict[str, str]] = []
-        with open(self.csv_path, 'r', encoding='utf-8', newline='') as file:
+        # Use utf-8-sig to tolerate CSVs saved with a BOM (common with Excel/Forms exports)
+        with open(self.csv_path, 'r', encoding='utf-8-sig', newline='') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 students.append(self.normalize_student(row))
@@ -83,13 +94,13 @@ class CSVHandler:
         """
         students = self.get_all_students()
         
-        # Normalize inputs for comparison (case-insensitive, strip whitespace)
-        name_normalized = name.strip().lower()
-        student_id_normalized = student_id.strip()
+        # Normalize inputs for comparison
+        name_normalized = self._normalize_name(name)
+        student_id_normalized = self._normalize_student_id(student_id)
         
         for student in students:
-            student_name = student.get('Name', '').strip().lower()
-            student_sid = student.get('Student_Id', '').strip()
+            student_name = self._normalize_name(student.get('Name', ''))
+            student_sid = self._normalize_student_id(student.get('Student_Id', ''))
             
             # Match both name and student ID
             if student_name == name_normalized and student_sid == student_id_normalized:
