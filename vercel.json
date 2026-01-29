@@ -6,6 +6,7 @@
       "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
+        "runtime": "python3.11",
         "includeFiles": "app/** data/** templates/**"
       }
     },
@@ -13,9 +14,9 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist",
-        "installCommand": "npm ci --include=dev",
-        "buildCommand": "npm run build"
+        "distDir": "frontend/dist",
+        "installCommand": "npm ci --include=dev --prefix frontend",
+        "buildCommand": "npm run build --prefix frontend"
       }
     }
   ],
