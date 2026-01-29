@@ -44,7 +44,7 @@ class CSVHandler:
         return {
             "Name": self._get_first(row, ["Name", "Full Name", "Student Name"]),
             "Student_Id": self._get_first(row, ["Student_Id", "Student ID", "StudentId", "Student_Id "]),
-            "Email_id": self._get_first(row, ["Email_id", "Email", "Email ID", "Email Address"]),
+            "Email_id": self._get_first(row, ["Email_id", "Email id", "Email", "Email ID", "Email Address"]),
             "Course": self._get_first(row, ["Course", "Program", "Branch"]),
             "Code": self._get_first(row, ["Code", "Workshop", "Event", "Batch"]),
         }
