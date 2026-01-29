@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "outputDirectory": "frontend/dist",
   "builds": [
     {
       "src": "api/index.py",
@@ -14,9 +15,9 @@
       "src": "frontend/package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "frontend/dist",
-        "installCommand": "npm ci --include=dev --prefix frontend",
-        "buildCommand": "npm run build --prefix frontend"
+        "distDir": "dist",
+        "installCommand": "npm ci --include=dev",
+        "buildCommand": "npm run build"
       }
     }
   ],
