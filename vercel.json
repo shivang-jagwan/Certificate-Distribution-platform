@@ -1,0 +1,33 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "version": 2,
+  "builds": [
+    {
+      "src": "frontend/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    },
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "functions": {
+    "api/**/*.py": {
+      "excludeFiles": "{frontend/**,node_modules/**,certificates/**,**/__pycache__/**,**/*.xlsx}"
+    }
+  },
+  "routes": [
+    { "src": "^/verify$", "dest": "/api/index.py" },
+    { "src": "^/certificate$", "dest": "/api/index.py" },
+    { "src": "^/health$", "dest": "/api/index.py" },
+    { "src": "^/generate-all$", "dest": "/api/index.py" },
+
+    { "src": "^/api/(.*)$", "dest": "/api/index.py" },
+
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
+  ]
+}
