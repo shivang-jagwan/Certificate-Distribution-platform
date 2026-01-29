@@ -1,25 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.11",
-        "includeFiles": "app/** data/** templates/**"
-      }
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist",
-        "installCommand": "npm install",
-        "buildCommand": "npm run build:vercel"
-      }
-    }
-  ],
+  "installCommand": "npm ci --include=dev --prefix frontend",
+  "buildCommand": "npm run build --prefix frontend",
+  "outputDirectory": "dist",
   "routes": [
     { "src": "^/verify$", "dest": "/api/index.py" },
     { "src": "^/certificate$", "dest": "/api/index.py" },

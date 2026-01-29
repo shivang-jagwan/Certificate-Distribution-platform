@@ -7,6 +7,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    build: {
+      // Vercel expects a top-level output directory; build there.
+      outDir: '../dist',
+      emptyOutDir: true
+    },
     server: {
       port: 5173,
       proxy: {
