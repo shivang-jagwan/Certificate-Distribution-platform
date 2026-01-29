@@ -4,6 +4,11 @@
   "installCommand": "npm ci --include=dev --prefix frontend",
   "buildCommand": "npm ci --include=dev --prefix frontend && npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
+  "functions": {
+    "api/index.py": {
+      "includeFiles": "app/** data/** templates/**"
+    }
+  },
   "routes": [
     { "src": "^/verify$", "dest": "/api/index.py" },
     { "src": "^/certificate$", "dest": "/api/index.py" },

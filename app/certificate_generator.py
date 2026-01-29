@@ -5,7 +5,7 @@ Handles dynamic certificate generation using Pillow
 
 import os
 from PIL import Image, ImageDraw, ImageFont
-from typing import Tuple
+from typing import Tuple, Optional
 from io import BytesIO
 from pathlib import Path
 
@@ -14,7 +14,7 @@ class CertificateGenerator:
     """Generate personalized certificates from template"""
     
     def __init__(self, template_path: str = "templates/certificate_template.jpg", 
-                 output_dir: str | None = "certificates"):
+                 output_dir: Optional[str] = "certificates"):
         """
         Initialize certificate generator
         
