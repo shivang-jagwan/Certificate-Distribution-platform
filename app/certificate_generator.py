@@ -77,9 +77,17 @@ class CertificateGenerator:
             c.rect(0, 0, page_width, page_height, fill=1, stroke=0)
 
         # Student name
-        c.setFillColorRGB(1, 1, 1)
-        c.setFont("Helvetica-Bold", 36)
-        c.drawCentredString(page_width / 2, page_height / 2, student_name)
+        # Defaults: black text and larger size for readability on light templates.
+        name_font_size = int(os.getenv("CERT_NAME_FONT_SIZE", "48"))
+        # Position: lower than center (closer to the bottom line on most templates).
+        # You can fine-tune on Render via CERT_NAME_Y_RATIO (0..1) or CERT_NAME_Y_OFFSET (points).
+        name_y_ratio = float(os.getenv("CERT_NAME_Y_RATIO", "0.38"))
+        name_y_offset = float(os.getenv("CERT_NAME_Y_OFFSET", "0"))
+        name_y = (page_height * name_y_ratio) + name_y_offset
+
+        c.setFillColorRGB(0, 0, 0)
+        c.setFont("Helvetica-Bold", name_font_size)
+        c.drawCentredString(page_width / 2, name_y, student_name)
 
         # Certificate ID (small)
         c.setFont("Helvetica", 10)

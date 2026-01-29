@@ -162,7 +162,11 @@ async def verify_certificate(name: str, student_id: str) -> Dict[str, Any]:
 
 
 @app.get("/certificate")
-async def get_certificate(name: str, student_id: str):
+async def get_certificate(
+    name: str,
+    student_id: str,
+    force: bool = Query(False, description="Regenerate the certificate PDF even if it already exists"),
+):
     """
     Generate certificate if not exists and return as downloadable PDF
     
@@ -200,7 +204,7 @@ async def get_certificate(name: str, student_id: str):
     certificate_id = csv_handler.generate_certificate_id(student.get("Student_Id"))
     
     # Render/WebService: cache PDFs on disk
-    if not cert_generator.certificate_exists(certificate_id):
+    if force or (not cert_generator.certificate_exists(certificate_id)):
         try:
             cert_generator.generate_certificate(
                 student_name=student.get("Name"),
