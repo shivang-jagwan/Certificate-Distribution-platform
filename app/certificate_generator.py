@@ -7,13 +7,14 @@ import os
 from PIL import Image, ImageDraw, ImageFont
 from typing import Tuple
 from io import BytesIO
+from pathlib import Path
 
 
 class CertificateGenerator:
     """Generate personalized certificates from template"""
     
     def __init__(self, template_path: str = "templates/certificate_template.jpg", 
-                 output_dir: str = "certificates"):
+                 output_dir: str | None = "certificates"):
         """
         Initialize certificate generator
         
@@ -21,11 +22,23 @@ class CertificateGenerator:
             template_path: Path to the certificate template image
             output_dir: Directory to save generated certificates
         """
-        self.template_path = template_path
-        self.output_dir = output_dir
-        
-        # Create output directory if it doesn't exist
-        os.makedirs(self.output_dir, exist_ok=True)
+        project_root = Path(__file__).resolve().parents[1]
+
+        template_candidate = Path(template_path)
+        if not template_candidate.is_absolute():
+            template_candidate = project_root / template_candidate
+        self.template_path = str(template_candidate)
+
+        if output_dir is None:
+            self.output_dir = None
+        else:
+            output_candidate = Path(output_dir)
+            if not output_candidate.is_absolute():
+                output_candidate = project_root / output_candidate
+            self.output_dir = str(output_candidate)
+
+            # Create output directory if it doesn't exist
+            os.makedirs(self.output_dir, exist_ok=True)
         
     def _get_font(self, size: int) -> ImageFont.FreeTypeFont:
         """
@@ -115,6 +128,9 @@ class CertificateGenerator:
         # Draw only the student name on certificate (no certificate ID)
         draw.text((name_x, name_y), student_name, fill='#1a1a1a', font=name_font)
         
+        if not self.output_dir:
+            raise RuntimeError("Output directory is not configured")
+
         # Save as PDF
         output_filename = f"{certificate_id}.pdf"
         output_path = os.path.join(self.output_dir, output_filename)
@@ -165,6 +181,9 @@ class CertificateGenerator:
         Returns:
             True if certificate exists, False otherwise
         """
+        if not self.output_dir:
+            return False
+
         output_path = os.path.join(self.output_dir, f"{certificate_id}.pdf")
         return os.path.exists(output_path)
     
@@ -178,4 +197,7 @@ class CertificateGenerator:
         Returns:
             Path to the certificate PDF
         """
+        if not self.output_dir:
+            raise RuntimeError("Output directory is not configured")
+
         return os.path.join(self.output_dir, f"{certificate_id}.pdf")

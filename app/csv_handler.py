@@ -5,6 +5,7 @@ Handles reading and searching student data from workshop attendance CSV file
 
 import csv
 import os
+from pathlib import Path
 from typing import Optional, List, Dict
 
 
@@ -18,7 +19,12 @@ class CSVHandler:
         Args:
             csv_path: Path to the CSV file containing student data
         """
-        self.csv_path = csv_path
+        project_root = Path(__file__).resolve().parents[1]
+        candidate = Path(csv_path)
+        if not candidate.is_absolute():
+            candidate = project_root / candidate
+
+        self.csv_path = str(candidate)
         
     def get_all_students(self) -> List[Dict[str, str]]:
         """

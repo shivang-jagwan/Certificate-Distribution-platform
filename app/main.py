@@ -31,10 +31,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize handlers
-csv_handler = CSVHandler()
-cert_generator = CertificateGenerator()
-
 # Vercel serverless deployments have an ephemeral filesystem.
 IS_VERCEL = os.getenv("VERCEL") == "1"
 
@@ -42,8 +38,20 @@ IS_VERCEL = os.getenv("VERCEL") == "1"
 ADMIN_KEY = "ADMIN123"
 
 
-# Frontend (React) build support
+# Project root (used to build stable absolute paths)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+
+# Initialize handlers
+csv_handler = CSVHandler(str(PROJECT_ROOT / "data" / "Workshop-I Attendance Form (Responses).csv"))
+cert_generator = CertificateGenerator(
+    template_path=str(PROJECT_ROOT / "templates" / "certificate_template.jpg"),
+    # Avoid read-only filesystem issues on Vercel.
+    output_dir=str(Path("/tmp") / "certificates") if IS_VERCEL else str(PROJECT_ROOT / "certificates"),
+)
+
+
+# Frontend (React) build support
 FRONTEND_DIST_DIR = PROJECT_ROOT / "frontend" / "dist"
 FRONTEND_INDEX_HTML = FRONTEND_DIST_DIR / "index.html"
 FRONTEND_ASSETS_DIR = FRONTEND_DIST_DIR / "assets"
@@ -70,9 +78,9 @@ async def home():
         return FileResponse(str(FRONTEND_INDEX_HTML), media_type="text/html")
 
     # Fallback to legacy static HTML template
-    html_path = "templates/index.html"
+    html_path = TEMPLATES_DIR / "index.html"
 
-    if not os.path.exists(html_path):
+    if not html_path.exists():
         raise HTTPException(status_code=500, detail="Template file not found")
 
     with open(html_path, 'r', encoding='utf-8') as file:
