@@ -86,6 +86,13 @@ Open `http://localhost:8000`.
 
 4) Deploy.
 
+## If Render shows Python 3.13 in logs
+
+This repo pins Python via `runtime.txt` (python-3.10.13). If your Render build log shows something like `.venv/lib/python3.13/...`, Render is not using the repo root.
+
+- In your Render service settings, ensure **Root Directory** is empty (repo root), and that `runtime.txt` exists at the repo root.
+- Redeploy after changing Root Directory.
+
 ### Using render.yaml (recommended)
 
 This repo includes `render.yaml`. You can use Render Blueprint deploy, or just keep it for documentation; Render will read it during blueprint deployments.
