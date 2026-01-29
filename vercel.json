@@ -5,7 +5,7 @@
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/dist",
   "functions": {
-    "api/**/*.py": {
+    "api/index.py": {
       "excludeFiles": "{frontend/**,node_modules/**,certificates/**,**/__pycache__/**,**/*.xlsx}"
     }
   },
