@@ -81,7 +81,7 @@ class CertificateGenerator:
         name_font_size = int(os.getenv("CERT_NAME_FONT_SIZE", "48"))
         # Position: lower than center (closer to the bottom line on most templates).
         # You can fine-tune on Render via CERT_NAME_Y_RATIO (0..1) or CERT_NAME_Y_OFFSET (points).
-        name_y_ratio = float(os.getenv("CERT_NAME_Y_RATIO", "0.38"))
+        name_y_ratio = float(os.getenv("CERT_NAME_Y_RATIO", "0.32"))
         name_y_offset = float(os.getenv("CERT_NAME_Y_OFFSET", "0"))
         name_y = (page_height * name_y_ratio) + name_y_offset
 
