@@ -20,7 +20,8 @@ class CSVHandler:
             csv_path: Path to the CSV file containing student data
         """
         project_root = Path(__file__).resolve().parents[1]
-        candidate = Path(csv_path)
+        normalized = (csv_path or "").replace("\\", "/")
+        candidate = Path(normalized)
         if not candidate.is_absolute():
             candidate = project_root / candidate
 

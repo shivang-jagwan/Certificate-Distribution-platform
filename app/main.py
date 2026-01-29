@@ -37,7 +37,9 @@ ADMIN_KEY = os.getenv("ADMIN_KEY", "")
 
 
 def _as_abs(path_str: str) -> str:
-    p = Path(path_str)
+    # Allow Windows-style env var paths (e.g., "data\\students.csv") even on Linux.
+    normalized = (path_str or "").replace("\\", "/")
+    p = Path(normalized)
     if not p.is_absolute():
         p = PROJECT_ROOT / p
     return str(p)
