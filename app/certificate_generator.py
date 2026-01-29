@@ -177,7 +177,9 @@ class CertificateGenerator:
             min_size = int(os.getenv("CERT_NAME_MIN_FONT_SIZE", "14"))
 
             # Positioning (centered horizontally, adjustable vertically)
-            y_ratio = float(os.getenv("CERT_NAME_Y_RATIO", "0.62"))
+            # Default places name below the "presented to" line on the template.
+            # Tune via CERT_NAME_Y_RATIO (0..1) or CERT_NAME_Y_OFFSET (pixels).
+            y_ratio = float(os.getenv("CERT_NAME_Y_RATIO", "0.52"))
             y_offset = float(os.getenv("CERT_NAME_Y_OFFSET", "0"))
             center_y = (height * y_ratio) + y_offset
 
