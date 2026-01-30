@@ -113,14 +113,18 @@
             max-width: 1400px;
             margin: 0 auto;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
+            position: relative;
         }
 
         .nav-title {
             font-weight: 800;
             font-size: 1.25rem;
             letter-spacing: 0.02em;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
             background: linear-gradient(90deg, #ffffff 0%, #a5b4fc 25%, #ffffff 50%, #7c3aed 75%, #ffffff 100%);
             background-size: 300% 100%;
             -webkit-background-clip: text;
@@ -156,6 +160,11 @@
             border-radius: 10px;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid var(--glass-border);
+        }
+
+        /* Make the Co-Dev logo pop on dark nav */
+        .logo-right .logo-image {
+            background: #ffffff;
         }
 
         .logo-icon {
@@ -579,7 +588,15 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
+            <div class="logo-left">
+                <img class="logo-image" src="/static/logo.jpg" alt="College logo" />
+                <span>Graphic Era Hill University</span>
+            </div>
             <div class="nav-title">Certificate Portal</div>
+            <div class="logo-right">
+                <img class="logo-image" src="/static/co-dev_logo.png" alt="Co-Dev logo" />
+                <span>Co-Dev Club</span>
+            </div>
         </div>
     </nav>
 
