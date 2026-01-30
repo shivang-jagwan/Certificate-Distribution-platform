@@ -113,8 +113,31 @@
             max-width: 1400px;
             margin: 0 auto;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
+        }
+
+        .nav-title {
+            font-weight: 800;
+            font-size: 1.25rem;
+            letter-spacing: 0.02em;
+            background: linear-gradient(90deg, #ffffff 0%, #a5b4fc 25%, #ffffff 50%, #7c3aed 75%, #ffffff 100%);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shine 3s linear infinite;
+            text-shadow: 0 0 20px rgba(165, 180, 252, 0.25);
+        }
+
+        @keyframes shine {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            100% {
+                background-position: 100% 50%;
+            }
         }
 
         .logo-left,
@@ -556,20 +579,7 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-container">
-            <div class="logo-left">
-                <img class="logo-image" src="/static/logo.jpg" alt="College logo" />
-                <span>Graphic Era College</span>
-            </div>
-            <ul class="nav-links">
-                <li><a href="#about">About</a></li>
-                <li><a href="#certificates">Certificates</a></li>
-                <li><a href="#verify">Verify</a></li>
-                <li><a href="#contact">Contact</a></li>
-            </ul>
-            <div class="logo-right">
-                <img class="logo-image" src="/static/co-dev_logo.png" alt="Co-Dev logo" />
-                <span>Co-Dev Club</span>
-            </div>
+            <div class="nav-title">Certificate Portal</div>
         </div>
     </nav>
 
@@ -579,7 +589,7 @@
             <div class="badge">
                 Official Digital Certification Platform
             </div>
-            <h1>Co-Dev Club<br>Certificate Portal</h1>
+            <h1>Certificate Portal</h1>
             <p class="subtitle">Securely Download and Verify Your Official Certificates</p>
             <button class="cta-button" onclick="showFormPage()">Get Certificate</button>
         </div>
